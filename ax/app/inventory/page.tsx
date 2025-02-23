@@ -9,41 +9,79 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Search } from "lucide-react"
 import { AddItemModal } from "@/components/add-item-modal"
 
-// This would typically come from an API or database
-const initialInventory = [
-  { id: 1, name: "Disposable Gloves", quantity: 500, defaultQuantity: 1000 },
-  { id: 2, name: "Surgical Masks", quantity: 200, defaultQuantity: 500 },
-  { id: 3, name: "Hand Sanitizer", quantity: 50, defaultQuantity: 100 },
-  { id: 4, name: "Syringes", quantity: 1000, defaultQuantity: 2000 },
-  { id: 5, name: "Bandages", quantity: 300, defaultQuantity: 500 },
-]
+const API_URL = "http://localhost:8000/api"
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState(initialInventory)
+  const [inventory, setInventory] = useState([])
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filteredInventory, setFilteredInventory] = useState(initialInventory)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch inventory data
+  const fetchInventory = async (query = "") => {
+    try {
+      const endpoint = query 
+        ? `${API_URL}/inventory/search?query=${encodeURIComponent(query)}`
+        : `${API_URL}/inventory`
+      
+      const response = await fetch(endpoint)
+      if (!response.ok) throw new Error('Failed to fetch inventory')
+      const data = await response.json()
+      setInventory(data)
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const lowercasedQuery = searchQuery.toLowerCase()
-    const filtered = inventory.filter((item) => item.name.toLowerCase().includes(lowercasedQuery))
-    setFilteredInventory(filtered)
-  }, [inventory, searchQuery])
+    fetchInventory()
+  }, [])
 
-  const handleAddItem = (newItem: any) => {
-    const existingItemIndex = inventory.findIndex((item) => item.name.toLowerCase() === newItem.name.toLowerCase())
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchInventory(searchQuery)
+    }, 300)
 
-    if (existingItemIndex !== -1) {
-      // Update existing item
-      const updatedInventory = [...inventory]
-      updatedInventory[existingItemIndex].quantity += newItem.quantity
-      setInventory(updatedInventory)
-    } else {
-      // Add new item
-      setInventory([...inventory, { ...newItem, id: inventory.length + 1 }])
+    return () => clearTimeout(debounceTimer)
+  }, [searchQuery])
+
+  const handleAddItem = async (newItem) => {
+    try {
+      const response = await fetch(`${API_URL}/inventory`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newItem)
+      })
+
+      if (!response.ok) throw new Error('Failed to add item')
+      
+      // Refresh inventory after adding item
+      fetchInventory()
+      setIsAddItemModalOpen(false)
+    } catch (err) {
+      setError(err.message)
     }
+  }
 
-    setIsAddItemModalOpen(false)
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="p-6">
+            <p className="text-red-500">Error: {error}</p>
+            <Button className="mt-4" onClick={() => fetchInventory()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -78,34 +116,40 @@ export default function InventoryPage() {
             <CardTitle>Current Inventory</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Default Quantity</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInventory.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{item.defaultQuantity}</TableCell>
-                    <TableCell>
-                      {item.quantity < item.defaultQuantity * 0.3 ? (
-                        <span className="text-red-500 font-semibold">Low Stock</span>
-                      ) : item.quantity < item.defaultQuantity * 0.6 ? (
-                        <span className="text-yellow-500 font-semibold">Medium Stock</span>
-                      ) : (
-                        <span className="text-green-500 font-semibold">Good Stock</span>
-                      )}
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex justify-center p-4">
+                <p>Loading inventory...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item Name</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Default Quantity</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {inventory.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{item.defaultQuantity}</TableCell>
+                      <TableCell>
+                        {item.quantity < item.defaultQuantity * 0.3 ? (
+                          <span className="text-red-500 font-semibold">Low Stock</span>
+                        ) : item.quantity < item.defaultQuantity * 0.6 ? (
+                          <span className="text-yellow-500 font-semibold">Medium Stock</span>
+                        ) : (
+                          <span className="text-green-500 font-semibold">Good Stock</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -113,4 +157,3 @@ export default function InventoryPage() {
     </div>
   )
 }
-

@@ -1,51 +1,58 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { QrScanner } from "@/components/qr-scanner"
-import { ArrowLeft } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { QrScanner } from "@/components/qr-scanner";
+import { ArrowLeft } from "lucide-react";
 
 interface AddItemModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (data: any) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
 }
 
 export function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModalProps) {
-  const [name, setName] = useState("")
-  const [quantity, setQuantity] = useState("")
-  const [defaultQuantity, setDefaultQuantity] = useState("")
-  const [isScanning, setIsScanning] = useState(false)
+  const [name, setName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [defaultQuantity, setDefaultQuantity] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit({ name, quantity: Number.parseInt(quantity), defaultQuantity: Number.parseInt(defaultQuantity) })
-    // Reset form
-    setName("")
-    setQuantity("")
-    setDefaultQuantity("")
-  }
+    e.preventDefault();
+    onSubmit({ name, quantity: Number.parseInt(quantity), defaultQuantity: Number.parseInt(defaultQuantity) });
+
+    // Reset form fields
+    setName("");
+    setQuantity("");
+    setDefaultQuantity("");
+  };
 
   const handleScan = (result: string) => {
-    // Assuming the QR code contains data in the format: "name,quantity,defaultQuantity"
-    const [scannedName, scannedQuantity, scannedDefaultQuantity] = result.split(",")
-    setName(scannedName)
-    setQuantity(scannedQuantity)
-    setDefaultQuantity(scannedDefaultQuantity)
-    setIsScanning(false)
-  }
+    const [scannedName, scannedQuantity, scannedDefaultQuantity] = result.split(",");
+    setName(scannedName);
+    setQuantity(scannedQuantity);
+    setDefaultQuantity(scannedDefaultQuantity);
+    setIsScanning(false);
+  };
 
   const handleBackFromScanner = () => {
-    setIsScanning(false)
-  }
+    setIsScanning(false);
+  };
+
+  // ** Reset fields when closing the modal **
+  const handleClose = () => {
+    setName(""); // Clears name field
+    setQuantity("");
+    setDefaultQuantity("");
+    onClose(); // Calls the parent onClose function
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
@@ -68,9 +75,9 @@ export function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModalProps) {
                 <Input
                   id="name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="col-span-3"
-                  required
+                  readOnly
+                  disabled
+                  className="col-span-3 bg-gray-20 text-gray-100 cursor-not-allowed opacity-20"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -102,7 +109,7 @@ export function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModalProps) {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsScanning(true)}>
-                Scan QR Code
+                Input Name via QR Code
               </Button>
               <Button type="submit">Add Item</Button>
             </DialogFooter>
@@ -110,6 +117,5 @@ export function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModalProps) {
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-
