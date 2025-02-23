@@ -94,9 +94,9 @@ export default function InventoryPage() {
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell>{item.defaultQuantity}</TableCell>
                     <TableCell>
-                      {item.quantity < item.defaultQuantity * 0.2 ? (
+                      {item.quantity < item.defaultQuantity * 0.3 ? (
                         <span className="text-red-500 font-semibold">Low Stock</span>
-                      ) : item.quantity < item.defaultQuantity * 0.5 ? (
+                      ) : item.quantity < item.defaultQuantity * 0.6 ? (
                         <span className="text-yellow-500 font-semibold">Medium Stock</span>
                       ) : (
                         <span className="text-green-500 font-semibold">Good Stock</span>

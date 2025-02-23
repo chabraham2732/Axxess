@@ -22,7 +22,7 @@ export default function Home() {
           </div>
         </section>
         <section className="container space-y-6 py-8 md:py-12 lg:py-24">
-          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem]">
+          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] -mt-[150px]">
             <Card>
               <CardHeader>
                 <ClipboardList className="h-14 w-14 text-blue-500" />
