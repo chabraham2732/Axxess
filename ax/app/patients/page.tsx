@@ -10,52 +10,78 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search } from "lucide-react"
 import { AddPatientModal } from "@/components/add-patient-modal"
 
-// This would typically come from an API or database
-const initialPatients = [
-  {
-    PID: 1,
-    P_Name: "John Smith",
-    DOB: "1979-05-15",
-    SSN: 123456789,
-    Address: "123 Main St",
-    Zipcode: 12345,
-    State_Abv: "NY",
-    phone_num: "5551234567",
-  },
-  {
-    PID: 2,
-    P_Name: "Sarah Johnson",
-    DOB: "1985-08-20",
-    SSN: 987654321,
-    Address: "456 Elm St",
-    Zipcode: 67890,
-    State_Abv: "CA",
-    phone_num: "5559876543",
-  },
-  // Add more patient data as needed
-]
+interface Patient {
+  pid: string
+  ssn: string
+  name: string
+  address: string
+  zip: string
+  age: number
+  sex: number
+  weight: number
+  height: number
+  phone: string
+  dob: string
+  city: string
+  state: string
+}
 
 export default function PatientsPage() {
-  const [patients, setPatients] = useState(initialPatients)
+  const [patients, setPatients] = useState<Patient[]>([])
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filteredPatients, setFilteredPatients] = useState(initialPatients)
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/patients1')
+        const text = await response.text()
+        
+        // Split the text into lines and parse each line
+        const patientsList = text.trim().split('\n').map(line => {
+          const [pid, ssn, name, address, zip, age, sex, weight, height, phone, dob, city, state] = line.split(' ')
+          return {
+            pid, ssn, name, address, zip,
+            age: parseInt(age),
+            sex: parseInt(sex),
+            weight: parseInt(weight),
+            height: parseInt(height),
+            phone, dob, city, state
+          }
+        })
+        
+        setPatients(patientsList)
+        setFilteredPatients(patientsList)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch patients')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPatients()
+  }, [])
 
   useEffect(() => {
     const lowercasedQuery = searchQuery.toLowerCase()
     const filtered = patients.filter(
       (patient) =>
-        patient.P_Name.toLowerCase().includes(lowercasedQuery) ||
-        patient.PID.toString().includes(lowercasedQuery) ||
-        patient.phone_num.includes(lowercasedQuery),
+        patient.name.toLowerCase().includes(lowercasedQuery) ||
+        patient.pid.toString().includes(lowercasedQuery) ||
+        patient.phone.includes(lowercasedQuery)
     )
     setFilteredPatients(filtered)
   }, [patients, searchQuery])
 
-  const handleAddPatient = (newPatient: any) => {
-    const newPID = Math.max(...patients.map((p) => p.PID)) + 1
-    setPatients([...patients, { ...newPatient, PID: newPID }])
-    setIsAddPatientModalOpen(false)
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading patients...</div>
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center min-h-screen text-red-500">Error: {error}</div>
   }
 
   return (
@@ -103,17 +129,17 @@ export default function PatientsPage() {
               </TableHeader>
               <TableBody>
                 {filteredPatients.map((patient) => (
-                  <TableRow key={patient.PID} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell>{patient.PID}</TableCell>
+                  <TableRow key={patient.pid} className="cursor-pointer hover:bg-muted/50">
+                    <TableCell>{patient.pid}</TableCell>
                     <TableCell>
-                      <Link href={`/patients/${patient.PID}`} className="hover:underline">
-                        {patient.P_Name}
+                      <Link href={`/patients/${patient.pid}`} className="hover:underline">
+                        {patient.name}
                       </Link>
                     </TableCell>
-                    <TableCell>{patient.DOB}</TableCell>
-                    <TableCell>{patient.Address}</TableCell>
-                    <TableCell>{patient.phone_num}</TableCell>
-                    <TableCell>{patient.State_Abv}</TableCell>
+                    <TableCell>{new Date(patient.dob).toLocaleDateString()}</TableCell>
+                    <TableCell>{patient.address}</TableCell>
+                    <TableCell>{patient.phone}</TableCell>
+                    <TableCell>{patient.state}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -124,9 +150,12 @@ export default function PatientsPage() {
       <AddPatientModal
         isOpen={isAddPatientModalOpen}
         onClose={() => setIsAddPatientModalOpen(false)}
-        onSubmit={handleAddPatient}
+        onSubmit={async (newPatient) => {
+          // Here you would typically make an API call to add the patient
+          console.log('Adding new patient:', newPatient);
+          setIsAddPatientModalOpen(false);
+        }}
       />
     </div>
   )
 }
-
